@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use bevy::color::palettes::*;
 
 use crate::{ Level, GameState, despawn_screen, TEXT_COLOR };
+use crate::configs::LevelConfig;
 
 pub fn game_plugin(app: &mut App) {
     app
@@ -19,6 +20,7 @@ fn game_setup(
     _level: Res<Level>,
 ) {
     //println!("Setting up game screen");
+    let level_config = LevelConfig::new(1, "assets/levels/1.json");
     commands
         .spawn((
             Node {
@@ -44,7 +46,7 @@ fn game_setup(
                 .with_children(|parent| {
                     // Display the game name
                     parent.spawn((
-                        Text::new("In Game Screen"),
+                        Text::new(format!("{:?}", level_config.paraboxes)),
                         TextFont {
                             font_size: 80.0,
                             ..default()

@@ -5,7 +5,7 @@ use serde_json::Value;
 
 pub struct LevelConfig {
     level: u32,
-    paraboxes: Vec<Parabox>,
+    pub paraboxes: Vec<Parabox>,
     player_pos: (u32, (u32, u32)), // (box_id, (x, y))
 }
 
@@ -68,7 +68,7 @@ impl Debug for LevelConfig {
     }
 }
 
-struct Parabox {
+pub struct Parabox {
     id: u32,
     outer: Option<Box<Parabox>>,
     map: HashMap<(u32, u32), Square>,
