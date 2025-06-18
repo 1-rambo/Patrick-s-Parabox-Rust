@@ -18,7 +18,7 @@ fn game_setup(
     mut commands: Commands,
     _level: Res<Level>,
 ) {
-    println!("Setting up game screen");
+    //println!("Setting up game screen");
     commands
         .spawn((
             Node {
