@@ -11,8 +11,6 @@ const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
 struct Level(u32);
 
 fn main() {
-    let level_config = LevelConfig::new(1, "assets/levels/1.json");
-    println!("{:?}", level_config);
     App::new()
         .add_plugins(DefaultPlugins)
         .init_state::<GameState>()
