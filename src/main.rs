@@ -1,19 +1,23 @@
 mod plugins;
+mod configs;
 
 use bevy::prelude::*;
 use plugins::menu;
+use configs::LevelConfig;
 
 const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
-        .init_state::<GameState>()
-        .add_systems(Startup, setup)
-        .add_plugins((
-            menu::menu_plugin,
-        ))
-        .run();
+    let level_config = LevelConfig::new(1, "assets/levels/1.json");
+    println!("{:?}", level_config);
+    // App::new()
+    //     .add_plugins(DefaultPlugins)
+    //     .init_state::<GameState>()
+    //     .add_systems(Startup, setup)
+    //     .add_plugins((
+    //         menu::menu_plugin,
+    //     ))
+    //     .run();
 }
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
