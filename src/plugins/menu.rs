@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use bevy::app::AppExit;
-use bevy::color::palettes::basic::*;
+use bevy::color::palettes::*;
 
-use super::super::{ GameState, despawn_screen, TEXT_COLOR };
+use crate::{ Level, GameState, despawn_screen, TEXT_COLOR };
 
 pub fn menu_plugin(app: &mut App) {
     app
@@ -10,6 +10,8 @@ pub fn menu_plugin(app: &mut App) {
         .add_systems(OnEnter(GameState::Menu), menu_setup)
         .add_systems(OnEnter(MenuState::Main), main_menu_setup)
         .add_systems(OnExit(MenuState::Main), despawn_screen::<OnMainMenuScreen>)
+        //.add_systems(OnEnter(MenuState::Levels), level_select_menu_setup)
+        .add_systems(Update, (start_button.run_if(in_state(MenuState::Main)),))
         .add_systems(
             Update, 
             (menu_action, button_system).run_if(in_state(GameState::Menu)),
@@ -31,7 +33,6 @@ const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
 const HOVERED_PRESSED_BUTTON: Color = Color::srgb(0.25, 0.65, 0.25);
 const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
-const MAIN_BACKGROUND: Color = Color::srgb(0.5, 0.5, 0.5);
 // Tag component used to mark which setting is currently selected
 #[derive(Component)]
 struct SelectedOption;
@@ -43,8 +44,8 @@ enum MenuButtonAction {
     // Settings,
     // SettingsDisplay,
     // SettingsSound,
-    BackToMainMenu,
-    BackToSettings,
+    // BackToMainMenu,
+    // BackToSettings,
     // GoToHelp,
     Quit,
 }
@@ -69,7 +70,7 @@ fn menu_setup(mut menu_state: ResMut<NextState<MenuState>>) {
     menu_state.set(MenuState::Main);
 }
 
-pub fn main_menu_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+pub fn main_menu_setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
     // Common style for all buttons on the screen
     // let button_style = (
     //     width: Val::Px(250.0),
@@ -85,13 +86,6 @@ pub fn main_menu_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     //     // The icon will be close to the left border of the button
     //     left: Val::Px(10.0),
     // );
-    let button_text_style = (
-        TextFont {
-            font_size: 40.0,
-            ..default()
-        },  
-        TextColor(TEXT_COLOR.into())
-    );
 
     commands
         .spawn((
@@ -102,7 +96,7 @@ pub fn main_menu_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 justify_content: JustifyContent::Center,                
                 ..default()
             },
-            BackgroundColor(MAIN_BACKGROUND.into()),
+            BackgroundColor(css::CRIMSON.into()),
             OnMainMenuScreen,
         ))
         .with_children(|parent| {
@@ -180,6 +174,22 @@ pub fn main_menu_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         });
 }
 
+fn start_button(
+    interaction_query: Query<(&Interaction, &Level), (Changed<Interaction>, With<Button>)>,
+    mut level_setting: ResMut<Level>,
+    mut menu_state: ResMut<NextState<MenuState>>,
+    mut game_state: ResMut<NextState<GameState>>,
+) {
+    for (interaction, level_picked) in &interaction_query {
+        if *interaction == Interaction::Pressed {
+            *level_setting = *level_picked;
+            println!("Start button pressed");
+            game_state.set(GameState::Game);
+            menu_state.set(MenuState::Disabled);
+        }
+    }
+}
+
 fn menu_action(
     interaction_query: Query<
         (&Interaction, &MenuButtonAction),
@@ -187,15 +197,19 @@ fn menu_action(
     >,
     mut app_exit_events: EventWriter<AppExit>,
     mut menu_state: ResMut<NextState<MenuState>>,
+    mut game_state: ResMut<NextState<GameState>>,
 ) {
     for (interaction, menu_button_action) in &interaction_query {
         if *interaction == Interaction::Pressed {
             match menu_button_action {
                 MenuButtonAction::Quit => {
-                    app_exit_events.send(AppExit::Success);
+                    app_exit_events.write(AppExit::Success);
                 }
                 MenuButtonAction::SelectLevel => {
-                    menu_state.set(MenuState::Levels);
+                    println!("Start button pressed");
+                    game_state.set(GameState::Game);
+                    menu_state.set(MenuState::Disabled);
+                    //menu_state.set(MenuState::Levels);
                 }
                 // MenuButtonAction::Settings => menu_state.set(MenuState::Settings),
                 // MenuButtonAction::SettingsDisplay => {
@@ -211,7 +225,6 @@ fn menu_action(
                 // MenuButtonAction::GoToHelp => {
                 //     menu_state.set(MenuState::Help);
                 // }
-                _ => {}
             }
         }
     }
