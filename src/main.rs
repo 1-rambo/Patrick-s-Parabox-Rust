@@ -2,10 +2,13 @@ mod plugins;
 mod configs;
 
 use bevy::prelude::*;
-use plugins::menu;
+use plugins::{menu, game}; //, level_select};
 use configs::LevelConfig;
 
 const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
+
+#[derive(Resource, Debug, Component, PartialEq, Eq, Clone, Copy)]
+struct Level(u32);
 
 fn main() {
     let level_config = LevelConfig::new(1, "assets/levels/1.json");
@@ -16,7 +19,10 @@ fn main() {
     //     .add_systems(Startup, setup)
     //     .add_plugins((
     //         menu::menu_plugin,
+            // level_select::level_select_plugin,
+            game::game_plugin,
     //     ))
+        .insert_resource(Level(0))
     //     .run();
 }
 
@@ -24,21 +30,20 @@ fn main() {
 enum GameState {
     #[default]
     Menu,
-    LevelSelect,
+    //LevelSelect,
     Game,
-    Win,
+    //Win,
 }
 
 fn setup(
     mut commands: Commands,
 ) {
     commands.spawn(Camera2d::default());
-    // Add any initial setup logic here, such as spawning entities or setting up resources
 }
 
 // Generic system that takes a component as a parameter, and will despawn all entities with that component
 fn despawn_screen<T: Component>(to_despawn: Query<Entity, With<T>>, mut commands: Commands) {
     for entity in &to_despawn {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
