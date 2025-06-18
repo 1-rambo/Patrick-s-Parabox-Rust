@@ -40,17 +40,26 @@ impl LevelConfig {
                         println!("pos: ({}, {}), square: {:?}", x, y, square);
                         match square["type"].as_str().expect("square should be a string") {
                             "Block" => new_parabox.add_square(x, y, Square::Block),
-                            "Target" => {
-                                let is_player = square["target_type"].as_str().expect("target_type should be a string") == "Player";
-                                new_parabox.add_square(x, y, Square::Target(is_player))
-                            }
                             _ => unimplemented!(),
                         }
                     }
                 }
             }
+            let targets = parabox["targets"].as_array().expect("targets should be an array");
+            for target in targets {
+                let x = target[0].as_u64().expect("target x should be a number") as u32;
+                let y = target[1].as_u64().expect("target y should be a number") as u32;
+                new_parabox.add_target(x, y);
+            }
             if id == player_pos.0 as usize {
-                new_parabox.player_pos = Some((player_pos.1 .0, player_pos.1 .1));
+                new_parabox.set_player_pos(player_pos.1 .0, player_pos.1 .1);
+            }
+            if !parabox["player_target"].is_null() {
+                let target = parabox["player_target"].as_array().expect("player_target should be an array");
+                new_parabox.set_player_target(
+                    target[0].as_u64().expect("player_target x should be a number") as u32,
+                    target[1].as_u64().expect("player_target y should be a number") as u32,
+                );
             }
             paraboxes.push(new_parabox);
         }
@@ -58,6 +67,63 @@ impl LevelConfig {
             level,
             paraboxes,
             player_pos,
+        }
+    }
+
+    pub fn shift(&mut self, pos: (i32, i32)) {
+        assert!((pos.0 == 0 || pos.1 == 0), "Invalid shift: {:?}", pos);
+        assert!((pos.0.abs() <= 1 && pos.1.abs() <= 1), "Shift too large: {:?}", pos);
+        if let Some(parabox) = self.paraboxes.get_mut(self.player_pos.0 as usize) {
+            let mut new_pos = (
+                (self.player_pos.1 .0 as i32 + pos.0),
+                (self.player_pos.1 .1 as i32 + pos.1),
+            );
+            while let Some(Square::Block | Square::Parabox(_)) = parabox.find_at(new_pos.0 as u32, new_pos.1 as u32) {
+                new_pos = (
+                    new_pos.0 + pos.0,
+                    new_pos.1 + pos.1,
+                );
+            }
+            println!("Current position: {:?}", self.player_pos.1);
+            println!("Attempting to move to: {:?}", new_pos);
+            if new_pos.0 < 0 || new_pos.1 < 0 ||
+                new_pos.0 >= parabox.size.0 as i32 || new_pos.1 >= parabox.size.1 as i32 {
+                unreachable!("New position out of bounds: {:?}", new_pos);
+            }
+            else if let Some(Square::Wall) = parabox.find_at(new_pos.0 as u32, new_pos.1 as u32) {
+                println!("New position is a wall: {:?}", new_pos);
+            }
+            else {
+                println!("New position is valid: {:?}", new_pos);
+                if new_pos.0 == self.player_pos.1 .0 as i32 {
+                    let mut final_pos = (new_pos.0, new_pos.1 - pos.1);
+                    while final_pos.1 != self.player_pos.1 .1 as i32 {
+                        let block_origin = parabox.find_at(final_pos.0 as u32, final_pos.1 as u32).unwrap();
+                        parabox.add_square(final_pos.0 as u32, (final_pos.1 + pos.1) as u32, block_origin.clone());
+                        final_pos.1 -= pos.1;
+                    }
+                }
+                else if new_pos.1 == self.player_pos.1 .1 as i32 {
+                    let mut final_pos = (new_pos.0 - pos.0, new_pos.1);
+                    while final_pos.0 != self.player_pos.1 .0 as i32 {
+                        let block_origin = parabox.find_at(final_pos.0 as u32, final_pos.1 as u32).unwrap();
+                        parabox.add_square((final_pos.0 + pos.0) as u32, final_pos.1 as u32, block_origin.clone());
+                        final_pos.0 -= pos.0;
+                    }
+                } else {
+                    unreachable!("Invalid move: {:?}", new_pos);
+                }
+                parabox.set_player_pos(
+                    (self.player_pos.1 .0 as i32 + pos.0) as u32,
+                    (self.player_pos.1 .1 as i32 + pos.1)as u32
+                );
+                self.player_pos.1 = (
+                    (self.player_pos.1 .0 as i32 + pos.0) as u32,
+                    (self.player_pos.1 .1 as i32 + pos.1) as u32,
+                );
+            }
+        } else {
+            panic!("Parabox with id {} not found", self.player_pos.0);
         }
     }
 }
@@ -73,7 +139,9 @@ pub struct Parabox {
     outer: Option<Box<Parabox>>,
     map: HashMap<(u32, u32), Square>,
     player_pos: Option<(u32, u32)>, // (x, y)
+    player_target: Option<(u32, u32)>, // (x, y)
     size: (u32, u32), // (width, height)
+    targets: Vec<(u32, u32)>, // List of target positions
 }
 
 impl Parabox {
@@ -83,12 +151,30 @@ impl Parabox {
             outer: None,
             map: HashMap::new(),
             player_pos: None,
+            player_target: None,
             size,
+            targets: Vec::new(),
         }
     }
 
     fn add_square(&mut self, x: u32, y: u32, square: Square) {
         self.map.insert((x, y), square);
+    }
+
+    fn set_player_pos(&mut self, x: u32, y: u32) {
+        self.player_pos = Some((x, y));
+    }
+
+    fn set_player_target(&mut self, x: u32, y: u32) {
+        self.player_target = Some((x, y));
+    }
+
+    fn add_target(&mut self, x: u32, y: u32) {
+        self.targets.push((x, y));
+    }
+
+    fn find_at(&self, x: u32, y: u32) -> Option<&Square> {
+        self.map.get(&(x, y))
     }
 }
 
@@ -101,29 +187,45 @@ impl Debug for Parabox {
         //     write!(f, ", outer: None")?;
         // }
         // writeln!(f, "")?;
+        let mut map = String::from("");
         for x in 0..self.size.0 {
             for y in 0..self.size.1 {
                 if let Some(square) = self.map.get(&(x, y)) {
-                    write!(f, "{:?}", square)?;
-                }
-                else if let Some((px, py)) = self.player_pos {
-                    if px == x && py == y { write!(f, "p")?; } // Player position
-                    else { write!(f, ".")?; } // Empty square
+                    map += &format!("{:?}", square);
                 }
                 else {
-                    write!(f, ".")?; // Empty square
+                    map += "."; // Empty space
                 }
             }
-            write!(f, "\n")?;
+            map += "\n";
+        }
+        if let Some((player_target_x, player_target_y)) = self.player_target {
+            let pos = (player_target_x * (self.size.1 + 1) + player_target_y) as usize;
+            map.replace_range(pos..pos + 1, "=");
+        }
+        for (target_x, target_y) in &self.targets {
+            let pos = (target_x * (self.size.1 + 1) + target_y) as usize;
+            map.replace_range(pos..pos + 1, "_");
+        }
+        if let Some((player_x, player_y)) = self.player_pos {
+            let pos = (player_x * (self.size.1 + 1) + player_y) as usize;
+            map.replace_range(pos..pos + 1, "p");
+        }
+        for ch in map.chars() {
+            if ch == '\n' {
+                write!(f, "\n")?;
+            } else {
+                write!(f, "{}", ch)?;
+            }
         }
         Ok(())
     }
 }
 
+#[derive(Clone)]
 enum Square {
     Wall,
     Block,
-    Target(bool), // 0: box, 1: player
     Parabox(u32),
 }
 
@@ -132,8 +234,8 @@ impl Debug for Square {
         match self {
             Square::Wall => write!(f, "#"),
             Square::Block => write!(f, "b"),
-            Square::Target(true) => write!(f, "="),
-            Square::Target(false) => write!(f, "_"),
+            // Square::Target(true) => write!(f, "="),
+            // Square::Target(false) => write!(f, "_"),
             Square::Parabox(id) => write!(f, "{}", id),
         }
     }
