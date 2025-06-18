@@ -2,7 +2,7 @@ mod plugins;
 mod configs;
 
 use bevy::prelude::*;
-use plugins::{menu, game}; //, level_select};
+use plugins::{menu, game};
 use configs::LevelConfig;
 
 const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
@@ -13,17 +13,17 @@ struct Level(u32);
 fn main() {
     let level_config = LevelConfig::new(1, "assets/levels/1.json");
     println!("{:?}", level_config);
-    // App::new()
-    //     .add_plugins(DefaultPlugins)
-    //     .init_state::<GameState>()
-    //     .add_systems(Startup, setup)
-    //     .add_plugins((
-    //         menu::menu_plugin,
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .init_state::<GameState>()
+        .add_systems(Startup, setup)
+        .add_plugins((
+            menu::menu_plugin,
             // level_select::level_select_plugin,
             game::game_plugin,
-    //     ))
+        ))
         .insert_resource(Level(0))
-    //     .run();
+        .run();
 }
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
