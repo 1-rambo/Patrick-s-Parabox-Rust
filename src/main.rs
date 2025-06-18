@@ -3,7 +3,6 @@ mod configs;
 
 use bevy::prelude::*;
 use plugins::{menu, game};
-use configs::LevelConfig;
 
 const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
 
