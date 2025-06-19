@@ -9,25 +9,28 @@ pub fn menu_plugin(app: &mut App) {
         .init_state::<MenuState>()
         .add_systems(OnEnter(GameState::Menu), menu_setup)
         .add_systems(OnEnter(MenuState::Main), main_menu_setup)
-        .add_systems(OnExit(MenuState::Main), despawn_screen::<OnMainMenuScreen>)
-        //.add_systems(OnEnter(MenuState::Levels), level_select_menu_setup)
+        .add_systems(OnExit(MenuState::Main), despawn_screen::<OnMainMenuScreen>) 
         .add_systems(Update, (start_button.run_if(in_state(MenuState::Main)),))
-        .add_systems(
-            Update, 
-            (menu_action, button_system).run_if(in_state(GameState::Menu)),
-        );
+        .add_systems(OnEnter(MenuState::Levels), level_select_menu_setup)
+        .add_systems(OnExit(MenuState::Levels), despawn_screen::<OnLevelSelectScreen>)
+        .add_systems(Update, level_button.run_if(in_state(MenuState::Levels)))
+        .add_systems(Update, (menu_action, button_system).run_if(in_state(GameState::Menu)))
+        .add_systems(Update, button_system.run_if(in_state(GameState::LevelSelect)));
 }
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
 pub enum MenuState {
     Main,
-    // Levels,
+    Levels,
     #[default]
     Disabled,
 }
 
 #[derive(Component)]
 struct OnMainMenuScreen;
+
+#[derive(Component)]
+struct OnLevelSelectScreen;
 
 const NORMAL_BUTTON: Color = Color::srgb(0.15, 0.15, 0.15);
 const HOVERED_BUTTON: Color = Color::srgb(0.25, 0.25, 0.25);
@@ -41,7 +44,6 @@ pub struct SelectedOption;
 #[derive(Component)]
 pub enum MenuButtonAction {
     SelectLevel,
-    StartLevel(Level),
     // Settings,
     // SettingsDisplay,
     // SettingsSound,
@@ -175,7 +177,96 @@ pub fn main_menu_setup(mut commands: Commands, _asset_server: Res<AssetServer>) 
         });
 }
 
+pub fn level_select_menu_setup(
+    mut commands: Commands,
+    _asset_server: Res<AssetServer>,
+) {
+    //println!("Setting up level select menu");
+    commands
+        .spawn((
+            Node {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,                
+                ..default()
+            },
+            BackgroundColor(css::DARK_BLUE.into()),
+            OnLevelSelectScreen,
+        ))
+        .with_children(|parent| {
+            parent
+                .spawn(
+                    Node {
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::all(Val::Px(50.0)),
+                        ..default()
+                    },
+                )
+                .with_children(|parent| {
+                    // Display the game name
+                    parent.spawn((
+                        Text::new("Level Select"),
+                        TextFont {
+                            font_size: 80.0,
+                            ..default()
+                        },
+                        TextColor(TEXT_COLOR.into())),
+                    );
+                    parent.spawn(Node{
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(25.0),
+                        margin: UiRect::all(Val::Px(20.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        flex_direction: FlexDirection::Row,
+                        ..default()
+                    })
+                    .with_children(|parent| {
+                        for level_number in 1..=4 {
+                            let level_picked = Level(level_number);
+                            let mut entity = parent.spawn((
+                                    Button,
+                                    Node {
+                                        margin: UiRect::all(Val::Px(20.0)),
+                                        width: Val::Px(250.0),
+                                        height: Val::Px(65.0),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        ..default()
+                                    },
+                                    BackgroundColor(NORMAL_BUTTON.into()),
+                                    level_picked,
+                                ));
+                                entity.with_children(|parent| {
+                                    parent.spawn((Text::new(format!("Level {}", level_picked.0)),
+                                        TextFont {
+                                            font_size: 40.0,
+                                            ..default()
+                                        },  
+                                        TextColor(TEXT_COLOR.into()),
+                                    ));
+                                });
+                            }
+                    });                    
+                });
+        });
+}
+
 fn start_button(
+    interaction_query: Query<&Interaction, (Changed<Interaction>, With<Button>)>,
+    mut menu_state: ResMut<NextState<MenuState>>,
+) {
+    for interaction in &interaction_query {
+        if *interaction == Interaction::Pressed {
+            //println!("Start button pressed");
+            menu_state.set(MenuState::Levels);
+        }
+    }
+}
+
+fn level_button(
     interaction_query: Query<(&Interaction, &Level), (Changed<Interaction>, With<Button>)>,
     mut level_setting: ResMut<Level>,
     mut menu_state: ResMut<NextState<MenuState>>,
@@ -184,7 +275,6 @@ fn start_button(
     for (interaction, level_picked) in &interaction_query {
         if *interaction == Interaction::Pressed {
             *level_setting = *level_picked;
-            //println!("Start button pressed");
             game_state.set(GameState::Game);
             menu_state.set(MenuState::Disabled);
         }
@@ -207,8 +297,8 @@ pub fn menu_action(
                     app_exit_events.write(AppExit::Success);
                 }
                 MenuButtonAction::SelectLevel => {
-                    game_state.set(GameState::Game);
-                    menu_state.set(MenuState::Disabled);
+                    game_state.set(GameState::LevelSelect);
+                    menu_state.set(MenuState::Levels);
                     //menu_state.set(MenuState::Levels);
                 }
                 // MenuButtonAction::Settings => menu_state.set(MenuState::Settings),

@@ -72,6 +72,14 @@ impl LevelConfig {
         }
     }
 
+    pub fn load(&mut self, level: u32) {
+        let file = format!("assets/levels/{}.json", level);
+        let new_level = LevelConfig::new(level, &file);
+        self.level = new_level.level;
+        self.paraboxes = new_level.paraboxes;
+        self.player_pos = new_level.player_pos;
+    }
+
     pub fn shift(&mut self, pos: (i32, i32)) -> bool {
         assert!((pos.0 == 0 || pos.1 == 0), "Invalid shift: {:?}", pos);
         assert!((pos.0.abs() <= 1 && pos.1.abs() <= 1), "Shift too large: {:?}", pos);
