@@ -17,6 +17,24 @@
                     "type": "Block"
                 }
             }
+        },
+        {
+            "outer": null,
+            "size": [5, 5],
+            "player_target": null,
+            "targets": [],
+            "map": {
+                "walls": []
+            }
+        },
+        {
+            "outer": null,
+            "size": [5, 5],
+            "player_target": null,
+            "targets": [],
+            "map": {
+                "walls": []
+            }
         }
     ]
 }
