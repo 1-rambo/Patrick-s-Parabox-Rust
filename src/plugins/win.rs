@@ -51,74 +51,72 @@ fn win_setup(
                         },
                         TextColor(TEXT_COLOR.into()),
                     ));
-                });
-            parent
-                .spawn((
-                    Button,
-                    Node {
-                        margin: UiRect::all(Val::Px(20.0)),
-                        width: Val::Px(350.0),
-                        height: Val::Px(65.0),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        ..default()
-                    },
-                    MenuButtonAction::BackToMainMenu,
-                ))
-                .with_children(|parent| {
-                    parent.spawn((Text::new("Main Menu"),
-                        TextFont {
-                            font_size: 40.0,
-                            ..default()
-                        },  
-                        TextColor(TEXT_COLOR.into()),
-                    ));
-                });
-                parent
-                    .spawn((
-                        Button,
-                        Node {
-                            margin: UiRect::all(Val::Px(20.0)),
-                            width: Val::Px(350.0),
-                            height: Val::Px(65.0),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            // background_color: NORMAL_BUTTON.into(),
-                            ..default()
-                        },
-                        MenuButtonAction::SelectLevel, // Placeholder for future actions
-                    ))
-                    .with_children(|parent| {
-                        parent.spawn((Text::new("Levels"),
-                            TextFont {
-                                font_size: 40.0,
+                    parent
+                        .spawn((
+                            Button,
+                            Node {
+                                margin: UiRect::all(Val::Px(20.0)),
+                                width: Val::Px(350.0),
+                                height: Val::Px(65.0),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
                                 ..default()
-                            },  
-                            TextColor(TEXT_COLOR.into()),
-                        ));
-                    });
-                parent
-                    .spawn((
-                        Button,
-                        Node {
-                            margin: UiRect::all(Val::Px(20.0)),
-                            width: Val::Px(350.0),
-                            height: Val::Px(65.0),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            // background_color: NORMAL_BUTTON.into(),
-                            ..default()
-                        },
-                        MenuButtonAction::Quit, // Placeholder for future actions
-                    ))
-                    .with_children(|parent| {
-                        parent.spawn((Text::new("Quit"),
-                            TextFont {
-                                font_size: 40.0,
+                            },
+                            MenuButtonAction::BackToMainMenu,
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((Text::new("Main Menu"),
+                                TextFont {
+                                    font_size: 40.0,
+                                    ..default()
+                                },  
+                                TextColor(TEXT_COLOR.into()),
+                            ));
+                        });
+                    parent
+                        .spawn((
+                            Button,
+                            Node {
+                                margin: UiRect::all(Val::Px(20.0)),
+                                width: Val::Px(350.0),
+                                height: Val::Px(65.0),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
                                 ..default()
-                            },  
-                            TextColor(TEXT_COLOR.into()),
-                        ));
-                    });
+                            },
+                            MenuButtonAction::SelectLevel, // Placeholder for future actions
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((Text::new("Levels"),
+                                TextFont {
+                                    font_size: 40.0,
+                                    ..default()
+                                },  
+                                TextColor(TEXT_COLOR.into()),
+                            ));
+                        });
+                    parent
+                        .spawn((
+                            Button,
+                            Node {
+                                margin: UiRect::all(Val::Px(20.0)),
+                                width: Val::Px(350.0),
+                                height: Val::Px(65.0),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
+                                ..default()
+                            },
+                            MenuButtonAction::Quit, // Placeholder for future actions
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((Text::new("Quit"),
+                                TextFont {
+                                    font_size: 40.0,
+                                    ..default()
+                                },  
+                                TextColor(TEXT_COLOR.into()),
+                            ));
+                        });
+                });
         });
 }

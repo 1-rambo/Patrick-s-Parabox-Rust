@@ -41,6 +41,7 @@ pub struct SelectedOption;
 #[derive(Component)]
 pub enum MenuButtonAction {
     SelectLevel,
+    StartLevel(Level),
     // Settings,
     // SettingsDisplay,
     // SettingsSound,

@@ -13,7 +13,7 @@ pub fn game_plugin(app: &mut App) {
             button_system
         ).chain().run_if(in_state(GameState::Game)))
         .add_systems(OnExit(GameState::Game), despawn_screen::<OnGameScreen>)
-        .insert_resource(LevelConfig::new(1, "assets/levels/3.json"));
+        .insert_resource(LevelConfig::new(1, "assets/levels/1.json"));
 }
 
 #[derive(Component)]
