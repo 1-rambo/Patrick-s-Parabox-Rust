@@ -206,7 +206,7 @@ pub fn menu_action(
                     app_exit_events.write(AppExit::Success);
                 }
                 MenuButtonAction::SelectLevel => {
-                    game_state.set(GameState::Win);
+                    game_state.set(GameState::Game);
                     menu_state.set(MenuState::Disabled);
                     //menu_state.set(MenuState::Levels);
                 }

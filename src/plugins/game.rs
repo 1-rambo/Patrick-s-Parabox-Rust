@@ -13,7 +13,7 @@ pub fn game_plugin(app: &mut App) {
             button_system
         ).chain().run_if(in_state(GameState::Game)))
         .add_systems(OnExit(GameState::Game), despawn_screen::<OnGameScreen>)
-        .insert_resource(LevelConfig::new(1, "assets/levels/1.json"));
+        .insert_resource(LevelConfig::new(1, "assets/levels/3.json"));
 }
 
 #[derive(Component)]
@@ -96,13 +96,17 @@ fn game_action(
         STAY
     };
     if movement != STAY {
-        level_config.shift(movement);
+        let win = level_config.shift(movement);
         // If there was a movement, we can despawn the current game screen
         for entity in &query {
             commands.entity(entity).despawn();
         }
         // And set up the new game screen
         game_setup(commands, level_config, asset_server);
+        if win {
+            // If the player won, we transition to the win state
+            game_state.set(GameState::Win);
+        }
     }
 }
 
