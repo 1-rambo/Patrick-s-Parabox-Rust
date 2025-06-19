@@ -11,12 +11,11 @@ struct Level(u32);
 
 fn main() {
     // use configs::*;
-    // let mut level = LevelConfig::new(0, "assets/levels/1.json");
-    // println!("{:?}", level);
-    // level.shift((1, 0));
-    // println!("{:?}", level);
-    // level.shift((0, 1));
-    // println!("{:?}", level);
+    // let mut level1 = LevelConfig::new(1, "assets/levels/1.json");
+    // let up = (-1, 0);
+    // let down = (1, 0);
+    // let left = (0, -1);
+    // let right = (0, 1);
     App::new()
         .add_plugins(DefaultPlugins)
         .init_state::<GameState>()

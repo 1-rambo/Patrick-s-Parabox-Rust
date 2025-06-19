@@ -72,7 +72,7 @@ impl LevelConfig {
         }
     }
 
-    pub fn shift(&mut self, pos: (i32, i32)) {
+    pub fn shift(&mut self, pos: (i32, i32)) -> bool {
         assert!((pos.0 == 0 || pos.1 == 0), "Invalid shift: {:?}", pos);
         assert!((pos.0.abs() <= 1 && pos.1.abs() <= 1), "Shift too large: {:?}", pos);
         if let Some(parabox) = self.paraboxes.get_mut(self.player_pos.0 as usize) {
@@ -129,6 +129,16 @@ impl LevelConfig {
         } else {
             panic!("Parabox with id {} not found", self.player_pos.0);
         }
+        self.check_win()
+    }
+
+    fn check_win(&self) -> bool {
+        for parabox in &self.paraboxes {
+            if !parabox.check_win() {
+                return false;
+            }
+        }
+        return true;
     }
 }
 
@@ -184,6 +194,28 @@ impl Parabox {
 
     fn find_at(&self, x: u32, y: u32) -> Option<&Square> {
         self.map.get(&(x, y))
+    }
+
+    fn check_win(&self) -> bool {
+        if let Some(player_target) = self.player_target {
+            if let Some(player_pos) = self.player_pos {
+                if player_pos != player_target {
+                    return false;
+                }
+            }
+            else {
+                return false;
+            }
+        }
+        for (target_x, target_y) in &self.targets {
+            if let Some(Square::Block) | Some(Square::Parabox(_)) = self.find_at(*target_x, *target_y) {
+                continue;
+            }
+            else {
+                return false;
+            }
+        }
+        return true;
     }
 }
 
