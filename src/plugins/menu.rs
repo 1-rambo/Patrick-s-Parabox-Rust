@@ -21,7 +21,7 @@ pub fn menu_plugin(app: &mut App) {
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
 pub enum MenuState {
     Main,
-    Levels,
+    // Levels,
     #[default]
     Disabled,
 }
@@ -183,7 +183,7 @@ fn start_button(
     for (interaction, level_picked) in &interaction_query {
         if *interaction == Interaction::Pressed {
             *level_setting = *level_picked;
-            println!("Start button pressed");
+            //println!("Start button pressed");
             game_state.set(GameState::Game);
             menu_state.set(MenuState::Disabled);
         }
@@ -206,7 +206,6 @@ fn menu_action(
                     app_exit_events.write(AppExit::Success);
                 }
                 MenuButtonAction::SelectLevel => {
-                    println!("Start button pressed");
                     game_state.set(GameState::Game);
                     menu_state.set(MenuState::Disabled);
                     //menu_state.set(MenuState::Levels);

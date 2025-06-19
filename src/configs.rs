@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::fmt::Debug;
 use serde_json::Value;
+use bevy::prelude::*;
 
+#[derive(Resource, Clone)]
 pub struct LevelConfig {
     level: u32,
     pub paraboxes: Vec<Parabox>,
@@ -100,6 +102,7 @@ impl LevelConfig {
                     while final_pos.1 != self.player_pos.1 .1 as i32 {
                         let block_origin = parabox.find_at(final_pos.0 as u32, final_pos.1 as u32).unwrap();
                         parabox.add_square(final_pos.0 as u32, (final_pos.1 + pos.1) as u32, block_origin.clone());
+                        parabox.remove_square(final_pos.0 as u32, final_pos.1 as u32);
                         final_pos.1 -= pos.1;
                     }
                 }
@@ -108,6 +111,7 @@ impl LevelConfig {
                     while final_pos.0 != self.player_pos.1 .0 as i32 {
                         let block_origin = parabox.find_at(final_pos.0 as u32, final_pos.1 as u32).unwrap();
                         parabox.add_square((final_pos.0 + pos.0) as u32, final_pos.1 as u32, block_origin.clone());
+                        parabox.remove_square(final_pos.0 as u32, final_pos.1 as u32);
                         final_pos.0 -= pos.0;
                     }
                 } else {
@@ -134,6 +138,7 @@ impl Debug for LevelConfig {
     }
 }
 
+#[derive(Resource, Clone)]
 pub struct Parabox {
     id: u32,
     outer: Option<Box<Parabox>>,
@@ -161,6 +166,10 @@ impl Parabox {
         self.map.insert((x, y), square);
     }
 
+    fn remove_square(&mut self, x: u32, y: u32) {
+        self.map.remove(&(x, y));
+    }
+
     fn set_player_pos(&mut self, x: u32, y: u32) {
         self.player_pos = Some((x, y));
     }
@@ -179,6 +188,7 @@ impl Parabox {
 }
 
 impl Debug for Parabox {
+
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // write!(f, "Parabox id: {}, size: {:?}", self.id, self.size)?;
         // if let Some(outer) = &self.outer {
@@ -201,11 +211,15 @@ impl Debug for Parabox {
         }
         if let Some((player_target_x, player_target_y)) = self.player_target {
             let pos = (player_target_x * (self.size.1 + 1) + player_target_y) as usize;
-            map.replace_range(pos..pos + 1, "=");
+            if map.chars().nth(pos).unwrap() == '.' {
+                map.replace_range(pos..pos + 1, "=");
+            }
         }
         for (target_x, target_y) in &self.targets {
             let pos = (target_x * (self.size.1 + 1) + target_y) as usize;
-            map.replace_range(pos..pos + 1, "_");
+            if map.chars().nth(pos).unwrap() == '.' {
+                map.replace_range(pos..pos + 1, "_");
+            }
         }
         if let Some((player_x, player_y)) = self.player_pos {
             let pos = (player_x * (self.size.1 + 1) + player_y) as usize;
@@ -222,7 +236,7 @@ impl Debug for Parabox {
     }
 }
 
-#[derive(Clone)]
+#[derive(Resource, Clone)]
 enum Square {
     Wall,
     Block,

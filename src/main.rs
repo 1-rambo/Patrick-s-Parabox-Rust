@@ -10,24 +10,24 @@ const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
 struct Level(u32);
 
 fn main() {
-    use configs::*;
-    let mut level = LevelConfig::new(0, "assets/levels/1.json");
-    println!("{:?}", level);
-    level.shift((1, 0));
-    println!("{:?}", level);
-    level.shift((0, 1));
-    println!("{:?}", level);
-    // App::new()
-    //     .add_plugins(DefaultPlugins)
-    //     .init_state::<GameState>()
-    //     .add_systems(Startup, setup)
-    //     .add_plugins((
-    //         menu::menu_plugin,
-    //         // level_select::level_select_plugin,
-    //         game::game_plugin,
-    //     ))
-    //     .insert_resource(Level(0))
-    //     .run();
+    // use configs::*;
+    // let mut level = LevelConfig::new(0, "assets/levels/1.json");
+    // println!("{:?}", level);
+    // level.shift((1, 0));
+    // println!("{:?}", level);
+    // level.shift((0, 1));
+    // println!("{:?}", level);
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .init_state::<GameState>()
+        .add_systems(Startup, setup)
+        .add_plugins((
+            menu::menu_plugin,
+            // level_select::level_select_plugin,
+            game::game_plugin,
+        ))
+        .insert_resource(Level(0))
+        .run();
 }
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
