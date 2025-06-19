@@ -35,22 +35,22 @@ const HOVERED_PRESSED_BUTTON: Color = Color::srgb(0.25, 0.65, 0.25);
 const PRESSED_BUTTON: Color = Color::srgb(0.35, 0.75, 0.35);
 // Tag component used to mark which setting is currently selected
 #[derive(Component)]
-struct SelectedOption;
+pub struct SelectedOption;
 
 // All actions that can be triggered from a button click
 #[derive(Component)]
-enum MenuButtonAction {
+pub enum MenuButtonAction {
     SelectLevel,
     // Settings,
     // SettingsDisplay,
     // SettingsSound,
-    // BackToMainMenu,
+    BackToMainMenu,
     // BackToSettings,
     // GoToHelp,
     Quit,
 }
 
-fn button_system(
+pub fn button_system(
     mut interaction_query: Query<
         (&Interaction, &mut BackgroundColor, Option<&SelectedOption>),
         (Changed<Interaction>, With<Button>),
@@ -159,7 +159,7 @@ pub fn main_menu_setup(mut commands: Commands, _asset_server: Res<AssetServer>) 
                                 // background_color: NORMAL_BUTTON.into(),
                                 ..default()
                             },
-                            MenuButtonAction::Quit,
+                            MenuButtonAction::Quit, // Placeholder for future actions
                         ))
                         .with_children(|parent| {
                             parent.spawn((Text::new("Exit"),
@@ -190,7 +190,7 @@ fn start_button(
     }
 }
 
-fn menu_action(
+pub fn menu_action(
     interaction_query: Query<
         (&Interaction, &MenuButtonAction),
         (Changed<Interaction>, With<Button>),
@@ -206,7 +206,7 @@ fn menu_action(
                     app_exit_events.write(AppExit::Success);
                 }
                 MenuButtonAction::SelectLevel => {
-                    game_state.set(GameState::Game);
+                    game_state.set(GameState::Win);
                     menu_state.set(MenuState::Disabled);
                     //menu_state.set(MenuState::Levels);
                 }
@@ -217,7 +217,10 @@ fn menu_action(
                 // MenuButtonAction::SettingsSound => {
                 //     menu_state.set(MenuState::SettingsSound);
                 // }
-                // MenuButtonAction::BackToMainMenu => menu_state.set(MenuState::Main),
+                MenuButtonAction::BackToMainMenu => {
+                    game_state.set(GameState::Menu);
+                    menu_state.set(MenuState::Main);
+                }
                 // MenuButtonAction::BackToSettings => {
                 //     menu_state.set(MenuState::Settings);
                 // }

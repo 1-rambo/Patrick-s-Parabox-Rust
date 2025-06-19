@@ -2,7 +2,7 @@ mod plugins;
 mod configs;
 
 use bevy::prelude::*;
-use plugins::{menu, game};
+use plugins::{menu, game, win};
 
 const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
 
@@ -25,6 +25,7 @@ fn main() {
             menu::menu_plugin,
             // level_select::level_select_plugin,
             game::game_plugin,
+            win::win_plugin,
         ))
         .insert_resource(Level(0))
         .run();
@@ -36,7 +37,7 @@ enum GameState {
     Menu,
     //LevelSelect,
     Game,
-    //Win,
+    Win,
 }
 
 fn setup(
