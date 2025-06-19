@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::color::palettes::*;
 
+use crate::plugins::menu;
 use crate::{ Level, GameState, despawn_screen, TEXT_COLOR };
 use crate::configs::LevelConfig;
 
@@ -101,6 +102,7 @@ fn game_action(
     query: Query<Entity, With<OnGameScreen>>,
     asset_server: Res<AssetServer>,
     mut game_state: ResMut<NextState<GameState>>,
+    mut menu_state: ResMut<NextState<menu::MenuState>>,
     mut level_config: ResMut<LevelConfig>,
 ) {
     let movement = if keyboard_input.just_pressed(KeyCode::ArrowLeft) || keyboard_input.just_pressed(KeyCode::KeyA) {
@@ -117,7 +119,8 @@ fn game_action(
         DOWN 
     } else if keyboard_input.just_pressed(KeyCode::Escape) {
         // Exit game
-        game_state.set(GameState::Menu);
+        game_state.set(GameState::LevelSelect);
+        menu_state.set(menu::MenuState::Levels);
         STAY
     } else {
         // No movement
