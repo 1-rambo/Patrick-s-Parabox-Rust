@@ -1,7 +1,7 @@
 mod plugins;
 mod configs;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, winit};
 use plugins::{menu, game};
 
 const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
@@ -11,26 +11,11 @@ struct Level(u32);
 
 fn main() {
     // use configs::*;
-    // let mut level = LevelConfig::new(0, "assets/levels/1.json");
+    // let mut level1 = LevelConfig::new(1, "assets/levels/1.json");
     // let up = (-1, 0);
     // let down = (1, 0);
     // let left = (0, -1);
     // let right = (0, 1);
-    // println!("{:?}, win: {:?}", level, level.check_win());
-    // level.shift(down);
-    // println!("{:?}, win: {:?}", level, level.check_win());
-    // level.shift(right);
-    // println!("{:?}, win: {:?}", level, level.check_win());
-    // level.shift(up);
-    // level.shift(right);
-    // level.shift(down);
-    // println!("{:?}, win: {:?}", level, level.check_win());
-    // level.shift(up);
-    // level.shift(up);
-    // println!("{:?}, win: {:?}", level, level.check_win());
-    // level.shift(up);
-    // println!("{:?}, win: {:?}", level, level.check_win());
-
     App::new()
         .add_plugins(DefaultPlugins)
         .init_state::<GameState>()
