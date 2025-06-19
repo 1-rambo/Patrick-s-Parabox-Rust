@@ -214,42 +214,44 @@ pub fn level_select_menu_setup(
                         },
                         TextColor(TEXT_COLOR.into())),
                     );
-                    parent.spawn(Node{
-                        width: Val::Percent(100.0),
-                        height: Val::Percent(25.0),
-                        margin: UiRect::all(Val::Px(20.0)),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        flex_direction: FlexDirection::Row,
-                        ..default()
-                    })
-                    .with_children(|parent| {
-                        for level_number in 1..=4 {
-                            let level_picked = Level(level_number);
-                            let mut entity = parent.spawn((
-                                    Button,
-                                    Node {
-                                        margin: UiRect::all(Val::Px(20.0)),
-                                        width: Val::Px(250.0),
-                                        height: Val::Px(65.0),
-                                        justify_content: JustifyContent::Center,
-                                        align_items: AlignItems::Center,
-                                        ..default()
-                                    },
-                                    BackgroundColor(NORMAL_BUTTON.into()),
-                                    level_picked,
-                                ));
-                                entity.with_children(|parent| {
-                                    parent.spawn((Text::new(format!("Level {}", level_picked.0)),
-                                        TextFont {
-                                            font_size: 40.0,
+                    for i in 1..=3 {
+                        parent.spawn(Node{
+                            width: Val::Percent(100.0),
+                            height: Val::Percent(20.0),
+                            margin: UiRect::all(Val::Px(20.0)),
+                            justify_content: JustifyContent::Center,
+                            align_items: AlignItems::Center,
+                            flex_direction: FlexDirection::Row,
+                            ..default()
+                        })
+                        .with_children(|parent| {
+                            for level_number in (4*i-3)..=(4*i) {
+                                let level_picked = Level(level_number);
+                                let mut entity = parent.spawn((
+                                        Button,
+                                        Node {
+                                            margin: UiRect::all(Val::Px(20.0)),
+                                            width: Val::Px(250.0),
+                                            height: Val::Px(65.0),
+                                            justify_content: JustifyContent::Center,
+                                            align_items: AlignItems::Center,
                                             ..default()
-                                        },  
-                                        TextColor(TEXT_COLOR.into()),
+                                        },
+                                        BackgroundColor(NORMAL_BUTTON.into()),
+                                        level_picked,
                                     ));
-                                });
-                            }
-                    });                    
+                                    entity.with_children(|parent| {
+                                        parent.spawn((Text::new(format!("Level {}", level_picked.0)),
+                                            TextFont {
+                                                font_size: 40.0,
+                                                ..default()
+                                            },  
+                                            TextColor(TEXT_COLOR.into()),
+                                        ));
+                                    });
+                                }
+                        });    
+                    }                
                 });
         });
 }
