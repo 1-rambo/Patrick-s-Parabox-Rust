@@ -13,6 +13,7 @@ pub fn game_plugin(app: &mut App) {
             button_system
         ).chain().run_if(in_state(GameState::Game)))
         .add_systems(OnExit(GameState::Game), despawn_screen::<OnGameScreen>)
+        .insert_resource(Level(1))
         .insert_resource(LevelConfig::new(1, "assets/levels/1.json"));
 }
 
@@ -26,6 +27,17 @@ const RIGHT: (i32, i32) = (0, 1);
 const STAY: (i32, i32) = (0, 0);
 
 fn game_setup(
+    commands: Commands,
+    level_settings: Res<Level>,
+    mut level_config: ResMut<LevelConfig>,
+    asset_server: Res<AssetServer>,
+) {
+    //println!("Setting up game screen");
+    level_config.load(level_settings.0);
+    render_game(commands, level_config, asset_server);
+}
+
+fn render_game(
     mut commands: Commands,
     level_config: ResMut<LevelConfig>,
     asset_server: Res<AssetServer>,
@@ -36,34 +48,50 @@ fn game_setup(
             Node {
                 width: Val::Percent(100.0),
                 height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Row,
                 align_items: AlignItems::Center,
-                justify_content: JustifyContent::Center,                
+                justify_content: JustifyContent::Center,
                 ..default()
             },
             BackgroundColor(css::DARK_BLUE.into()),
             OnGameScreen,
         ))
         .with_children(|parent| {
-            parent
-                .spawn(
+            let parabox_num = level_config.paraboxes.len();
+            let colors = vec![
+                css::RED, css::GREEN, css::BLUE, css::YELLOW, css::ORANGE, css::PURPLE,
+                css::PINK, css::MAGENTA, css::LIGHT_GRAY
+            ];
+            for (id, parabox) in level_config.paraboxes.iter().enumerate() {
+                parent.spawn((
                     Node {
-                        flex_direction: FlexDirection::Column,
+                        width: Val::Percent(100.0 / parabox_num as f32),
+                        height: Val::Percent(100.0),
                         align_items: AlignItems::Center,
-                        margin: UiRect::all(Val::Px(50.0)),
+                        justify_content: JustifyContent::Center,
                         ..default()
                     },
-                )
+                    BackgroundColor(colors[id].into()),
+                ))
                 .with_children(|parent| {
-                    // Display the game name
                     parent.spawn((
-                        Text::new(format!("{:?}", level_config.paraboxes[0])),
+                        Text::new(format!("{:?}", id + 1)),
                         TextFont {
-                            font_size: 80.0,
+                            font_size: 60.0,
+                            ..default()
+                        },
+                        TextColor(TEXT_COLOR.into())
+                    ));
+                    parent.spawn((
+                        Text::new(format!("{:?}", parabox)),
+                        TextFont {
+                            font_size: 60.0,
                             ..default()
                         },
                         TextColor(TEXT_COLOR.into())),
                     );
                 });
+            }
         });
 }
 
@@ -102,7 +130,7 @@ fn game_action(
             commands.entity(entity).despawn();
         }
         // And set up the new game screen
-        game_setup(commands, level_config, asset_server);
+        render_game(commands, level_config, asset_server);
         if win {
             // If the player won, we transition to the win state
             game_state.set(GameState::Win);

@@ -34,7 +34,7 @@ fn main() {
 enum GameState {
     #[default]
     Menu,
-    //LevelSelect,
+    LevelSelect,
     Game,
     Win,
 }
