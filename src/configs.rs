@@ -29,6 +29,12 @@ impl LevelConfig {
                 parabox["size"][1].as_u64().expect("parabox size height should be a number") as i32,
             );
             let mut new_parabox = Parabox::new(id as i32, (size_x, size_y));
+            if parabox["outer"].is_null() {
+                new_parabox.outer = None;
+            } else {
+                let outer_id = parabox["outer"].as_i64().expect("parabox outer id should be a number") as i32;
+                new_parabox.outer = Some(outer_id);
+            }
             let map = parabox["map"].as_object().expect("parabox map should be an object");
             for wall_pos in map["walls"].as_array().expect("walls should be an array") {
                 
@@ -42,6 +48,10 @@ impl LevelConfig {
                         println!("pos: ({}, {}), square: {:?}", x, y, square);
                         match square["type"].as_str().expect("square should be a string") {
                             "Block" => new_parabox.add_square((x, y), Square::Block),
+                            "Parabox" => {
+                                let id = square["id"].as_i64().expect("parabox id should be a number") as i32;
+                                new_parabox.add_square((x, y), Square::Parabox(id));
+                            }
                             _ => unimplemented!(),
                         }
                     }
@@ -100,7 +110,7 @@ impl LevelConfig {
             } else {
                 let mut outer_parabox = parabox.clone();
                 while !outer_parabox.check_inbounds(new_pos) {
-                    let new_outer_parabox = *(outer_parabox.outer.clone().unwrap()).clone();
+                    let new_outer_parabox = self.paraboxes[outer_parabox.outer.unwrap() as usize].clone();
                     new_pos = new_outer_parabox.find_box(outer_parabox.id);
                     new_pos = (
                         new_pos.0 + dir.0,
@@ -120,7 +130,7 @@ impl LevelConfig {
                     new_pos.1 + dir.1,
                 );
                 while !cur_parabox.check_inbounds(new_pos) {
-                    let new_outer_parabox = *(cur_parabox.outer.clone().unwrap()).clone();
+                    let new_outer_parabox = self.paraboxes[cur_parabox.outer.unwrap() as usize].clone();
                     new_pos = new_outer_parabox.find_box(cur_parabox.id);
                     new_pos = (
                         new_pos.0 + dir.0,
@@ -130,8 +140,9 @@ impl LevelConfig {
                 }
             }
 
-            println!("Current position: {:?}", self.player_pos.1);
-            println!("Attempting to move to: {:?}", new_pos);
+            println!("path_blocks: {:?}", path_blocks);
+            // println!("Current position: {:?}", self.player_pos.1);
+            // println!("Attempting to move to: {:?}", new_pos);
             // if new_pos.0 < 0 || new_pos.1 < 0 ||
             //     new_pos.0 >= parabox.size.0 as i32 || new_pos.1 >= parabox.size.1 as i32 {
             //     unreachable!("New position out of bounds: {:?}", new_pos);
@@ -141,12 +152,15 @@ impl LevelConfig {
                 println!("New position is a wall: {:?}", new_pos);
             }
             else {
-                println!("New position is valid: {:?}", new_pos);
+                // println!("New position is valid: {:?}", new_pos);
                 // TODO: move considering out
                 let mut dest = (cur_parabox.id, new_pos); 
+                println!("Final destination: {:?}", dest);
                 for (block, box_id, pos) in path_blocks.iter().rev() {
+                    println!("removing block: {:?} from parabox: {} at pos: {:?}", block, box_id, pos);
                     self.paraboxes[*box_id as usize].remove_square(*pos);
-                    self.paraboxes[*box_id as usize].add_square(dest.1, block.clone());
+                    println!("adding block: {:?} to parabox: {} at pos: {:?}", block, dest.0, dest.1);
+                    self.paraboxes[dest.0 as usize].add_square(dest.1, block.clone());
                     dest = (*box_id, *pos);
                 }
                 if let Some(square) = square {
@@ -213,7 +227,8 @@ impl Debug for LevelConfig {
 #[derive(Resource, Clone)]
 pub struct Parabox {
     id: i32,
-    outer: Option<Box<Parabox>>,
+    // outer: Option<Box<Parabox>>,
+    outer: Option<i32>,
     map: HashMap<(i32, i32), Square>,
     player_pos: Option<(i32, i32)>, // (x, y)
     player_target: Option<(i32, i32)>, // (x, y)
@@ -359,7 +374,7 @@ impl Debug for Square {
             Square::Block => write!(f, "b"),
             // Square::Target(true) => write!(f, "="),
             // Square::Target(false) => write!(f, "_"),
-            Square::Parabox(id) => write!(f, "{}", id),
+            Square::Parabox(id) => write!(f, "{}", id + 1),
         }
     }
 }
