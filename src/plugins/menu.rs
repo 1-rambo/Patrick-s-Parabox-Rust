@@ -15,7 +15,7 @@ pub fn menu_plugin(app: &mut App) {
         .add_systems(OnExit(MenuState::Levels), despawn_screen::<OnLevelSelectScreen>)
         .add_systems(Update, level_button.run_if(in_state(MenuState::Levels)))
         .add_systems(Update, (menu_action, button_system).run_if(in_state(GameState::Menu)))
-        .add_systems(Update, button_system.run_if(in_state(GameState::LevelSelect)));
+        .add_systems(Update, (menu_action, button_system).run_if(in_state(GameState::LevelSelect)));
 }
 
 #[derive(Clone, Copy, Default, Eq, PartialEq, Debug, Hash, States)]
@@ -228,30 +228,86 @@ pub fn level_select_menu_setup(
                             for level_number in (4*i-3)..=(4*i) {
                                 let level_picked = Level(level_number);
                                 let mut entity = parent.spawn((
-                                        Button,
-                                        Node {
-                                            margin: UiRect::all(Val::Px(20.0)),
-                                            width: Val::Px(250.0),
-                                            height: Val::Px(65.0),
-                                            justify_content: JustifyContent::Center,
-                                            align_items: AlignItems::Center,
+                                    Button,
+                                    Node {
+                                        margin: UiRect::all(Val::Px(20.0)),
+                                        width: Val::Px(250.0),
+                                        height: Val::Px(65.0),
+                                        justify_content: JustifyContent::Center,
+                                        align_items: AlignItems::Center,
+                                        ..default()
+                                    },
+                                    BackgroundColor(NORMAL_BUTTON.into()),
+                                    level_picked,
+                                ));
+                                entity.with_children(|parent| {
+                                    parent.spawn((Text::new(format!("Level {}", level_picked.0)),
+                                        TextFont {
+                                            font_size: 40.0,
                                             ..default()
-                                        },
-                                        BackgroundColor(NORMAL_BUTTON.into()),
-                                        level_picked,
+                                        },  
+                                        TextColor(TEXT_COLOR.into()),
                                     ));
-                                    entity.with_children(|parent| {
-                                        parent.spawn((Text::new(format!("Level {}", level_picked.0)),
-                                            TextFont {
-                                                font_size: 40.0,
-                                                ..default()
-                                            },  
-                                            TextColor(TEXT_COLOR.into()),
-                                        ));
-                                    });
-                                }
+                                });
+                            }
                         });    
-                    }                
+                    }
+                    parent.spawn(Node{
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(20.0),
+                        margin: UiRect::all(Val::Px(20.0)),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        flex_direction: FlexDirection::Row,
+                        ..default()
+                    })
+                    .with_children(|parent| {
+                        parent
+                            .spawn((
+                                Button,
+                                Node {
+                                    margin: UiRect::all(Val::Px(20.0)),
+                                    width: Val::Px(350.0),
+                                    height: Val::Px(65.0),
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
+                                    // background_color: NORMAL_BUTTON.into(),
+                                    ..default()
+                                },
+                                MenuButtonAction::BackToMainMenu,
+                            ))
+                            .with_children(|parent| {
+                                parent.spawn((Text::new("Main Menu"),
+                                    TextFont {
+                                        font_size: 40.0,
+                                        ..default()
+                                    },  
+                                    TextColor(TEXT_COLOR.into()),
+                                ));
+                            });
+                        parent
+                            .spawn((
+                                Button,
+                                Node {
+                                    margin: UiRect::all(Val::Px(20.0)),
+                                    width: Val::Px(350.0),
+                                    height: Val::Px(65.0),
+                                    justify_content: JustifyContent::Center,
+                                    align_items: AlignItems::Center,
+                                    ..default()
+                                },
+                                MenuButtonAction::Quit,
+                            ))
+                            .with_children(|parent| {
+                                parent.spawn((Text::new("Exit"),
+                                    TextFont {
+                                        font_size: 40.0,
+                                        ..default()
+                                    },  
+                                    TextColor(TEXT_COLOR.into()),
+                                ));
+                            });
+                    });
                 });
         });
 }
