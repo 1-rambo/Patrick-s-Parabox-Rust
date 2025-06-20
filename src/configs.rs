@@ -6,42 +6,42 @@ use bevy::prelude::*;
 
 #[derive(Resource, Clone)]
 pub struct LevelConfig {
-    level: u32,
+    level: i32,
     pub paraboxes: Vec<Parabox>,
-    player_pos: (u32, (u32, u32)), // (box_id, (x, y))
+    player_pos: (i32, (i32, i32)), // (box_id, (x, y))
 }
 
 impl LevelConfig {
-    pub fn new(level: u32, file: &str) -> Self {
+    pub fn new(level: i32, file: &str) -> Self {
         let file = File::open(file).expect("Failed to open level config file");
         let data: Value = serde_json::from_reader(file).expect("Failed to parse level config file");
         let player_pos = (
-            data["player_pos"][0].as_u64().expect("player_pos x should be a number") as u32,
+            data["player_pos"][0].as_u64().expect("player_pos x should be a number") as i32,
             (
-                data["player_pos"][1].as_u64().expect("player_pos y should be a number") as u32,
-                data["player_pos"][2].as_u64().expect("player_pos z should be a number") as u32,
+                data["player_pos"][1].as_u64().expect("player_pos y should be a number") as i32,
+                data["player_pos"][2].as_u64().expect("player_pos z should be a number") as i32,
             ),
         );
         let mut paraboxes: Vec<Parabox> = Vec::new();
         for (id, parabox) in data["paraboxes"].as_array().expect("paraboxes should be an array").iter().enumerate() {
             let (size_x, size_y) = (
-                parabox["size"][0].as_u64().expect("parabox size width should be a number") as u32,
-                parabox["size"][1].as_u64().expect("parabox size height should be a number") as u32,
+                parabox["size"][0].as_u64().expect("parabox size width should be a number") as i32,
+                parabox["size"][1].as_u64().expect("parabox size height should be a number") as i32,
             );
-            let mut new_parabox = Parabox::new(id as u32, (size_x, size_y));
+            let mut new_parabox = Parabox::new(id as i32, (size_x, size_y));
             let map = parabox["map"].as_object().expect("parabox map should be an object");
             for wall_pos in map["walls"].as_array().expect("walls should be an array") {
                 
-                let x = wall_pos[0].as_u64().expect("wall x should be a number") as u32;
-                let y = wall_pos[1].as_u64().expect("wall y should be a number") as u32;
-                new_parabox.add_square(x, y, Square::Wall);
+                let x = wall_pos[0].as_u64().expect("wall x should be a number") as i32;
+                let y = wall_pos[1].as_u64().expect("wall y should be a number") as i32;
+                new_parabox.add_square((x, y), Square::Wall);
             }
             for x in 0..size_x {
                 for y in 0..size_y {
                     if let Some(square) = map.get(&format!("({}, {})", x, y)) {
                         println!("pos: ({}, {}), square: {:?}", x, y, square);
                         match square["type"].as_str().expect("square should be a string") {
-                            "Block" => new_parabox.add_square(x, y, Square::Block),
+                            "Block" => new_parabox.add_square((x, y), Square::Block),
                             _ => unimplemented!(),
                         }
                     }
@@ -49,18 +49,18 @@ impl LevelConfig {
             }
             let targets = parabox["targets"].as_array().expect("targets should be an array");
             for target in targets {
-                let x = target[0].as_u64().expect("target x should be a number") as u32;
-                let y = target[1].as_u64().expect("target y should be a number") as u32;
+                let x = target[0].as_u64().expect("target x should be a number") as i32;
+                let y = target[1].as_u64().expect("target y should be a number") as i32;
                 new_parabox.add_target(x, y);
             }
             if id == player_pos.0 as usize {
-                new_parabox.set_player_pos(player_pos.1 .0, player_pos.1 .1);
+                new_parabox.set_player_pos(Some(player_pos.1));
             }
             if !parabox["player_target"].is_null() {
                 let target = parabox["player_target"].as_array().expect("player_target should be an array");
                 new_parabox.set_player_target(
-                    target[0].as_u64().expect("player_target x should be a number") as u32,
-                    target[1].as_u64().expect("player_target y should be a number") as u32,
+                    target[0].as_u64().expect("player_target x should be a number") as i32,
+                    target[1].as_u64().expect("player_target y should be a number") as i32,
                 );
             }
             paraboxes.push(new_parabox);
@@ -72,7 +72,7 @@ impl LevelConfig {
         }
     }
 
-    pub fn load(&mut self, level: u32) {
+    pub fn load(&mut self, level: i32) {
         let file = format!("assets/levels/{}.json", level);
         let new_level = LevelConfig::new(level, &file);
         self.level = new_level.level;
@@ -80,63 +80,117 @@ impl LevelConfig {
         self.player_pos = new_level.player_pos;
     }
 
-    pub fn shift(&mut self, pos: (i32, i32)) -> bool {
-        assert!((pos.0 == 0 || pos.1 == 0), "Invalid shift: {:?}", pos);
-        assert!((pos.0.abs() <= 1 && pos.1.abs() <= 1), "Shift too large: {:?}", pos);
-        if let Some(parabox) = self.paraboxes.get_mut(self.player_pos.0 as usize) {
+    pub fn shift(&mut self, square: Option<Square>, ori_pos: Option<(i32, (i32, i32))>, dir: (i32, i32)) -> bool {
+        // Detemine if shift is valid
+        assert!((dir.0 == 0 || dir.1 == 0), "Invalid shift: {:?}", dir);
+        assert!((dir.0.abs() <= 1 && dir.1.abs() <= 1), "Shift too large: {:?}", dir);
+
+        // Start from the parabox that contains the player
+        let ori_pos = ori_pos.unwrap_or(self.player_pos);
+        if let Some(parabox) = self.paraboxes.get_mut(ori_pos.0 as usize) {
+            // Check for wall/empty along the shift direction
+            let ori_id = parabox.id;
             let mut new_pos = (
-                (self.player_pos.1 .0 as i32 + pos.0),
-                (self.player_pos.1 .1 as i32 + pos.1),
+                (ori_pos.1 .0 as i32 + dir.0),
+                (ori_pos.1 .1 as i32 + dir.1),
             );
-            while let Some(Square::Block | Square::Parabox(_)) = parabox.find_at(new_pos.0 as u32, new_pos.1 as u32) {
+            // TODO: check for empty (including outer)
+            let mut cur_parabox = if parabox.check_inbounds(new_pos) {
+                parabox.clone()
+            } else {
+                let mut outer_parabox = parabox.clone();
+                while !outer_parabox.check_inbounds(new_pos) {
+                    let new_outer_parabox = *(outer_parabox.outer.clone().unwrap()).clone();
+                    new_pos = new_outer_parabox.find_box(outer_parabox.id);
+                    new_pos = (
+                        new_pos.0 + dir.0,
+                        new_pos.1 + dir.1,
+                    );
+                    outer_parabox = new_outer_parabox;
+                }
+                outer_parabox
+            };
+            // cur_parabox: the new parabox; new_pos: the new position in the parabox
+
+            let mut path_blocks = Vec::new();
+            while let v @ Some(Square::Block | Square::Parabox(_)) = cur_parabox.find_at(new_pos.0 as i32, new_pos.1 as i32) {
+                path_blocks.push((v.unwrap().clone(), cur_parabox.id, new_pos));
                 new_pos = (
-                    new_pos.0 + pos.0,
-                    new_pos.1 + pos.1,
+                    new_pos.0 + dir.0,
+                    new_pos.1 + dir.1,
                 );
+                while !cur_parabox.check_inbounds(new_pos) {
+                    let new_outer_parabox = *(cur_parabox.outer.clone().unwrap()).clone();
+                    new_pos = new_outer_parabox.find_box(cur_parabox.id);
+                    new_pos = (
+                        new_pos.0 + dir.0,
+                        new_pos.1 + dir.1,
+                    );
+                    cur_parabox = new_outer_parabox;
+                }
             }
+
             println!("Current position: {:?}", self.player_pos.1);
             println!("Attempting to move to: {:?}", new_pos);
-            if new_pos.0 < 0 || new_pos.1 < 0 ||
-                new_pos.0 >= parabox.size.0 as i32 || new_pos.1 >= parabox.size.1 as i32 {
-                unreachable!("New position out of bounds: {:?}", new_pos);
-            }
-            else if let Some(Square::Wall) = parabox.find_at(new_pos.0 as u32, new_pos.1 as u32) {
+            // if new_pos.0 < 0 || new_pos.1 < 0 ||
+            //     new_pos.0 >= parabox.size.0 as i32 || new_pos.1 >= parabox.size.1 as i32 {
+            //     unreachable!("New position out of bounds: {:?}", new_pos);
+            // }
+            if let Some(Square::Wall) = cur_parabox.find_at(new_pos.0 as i32, new_pos.1 as i32) {
+                // TODO: try_enter
                 println!("New position is a wall: {:?}", new_pos);
             }
             else {
                 println!("New position is valid: {:?}", new_pos);
-                if new_pos.0 == self.player_pos.1 .0 as i32 {
-                    let mut final_pos = (new_pos.0, new_pos.1 - pos.1);
-                    while final_pos.1 != self.player_pos.1 .1 as i32 {
-                        let block_origin = parabox.find_at(final_pos.0 as u32, final_pos.1 as u32).unwrap();
-                        parabox.add_square(final_pos.0 as u32, (final_pos.1 + pos.1) as u32, block_origin.clone());
-                        parabox.remove_square(final_pos.0 as u32, final_pos.1 as u32);
-                        final_pos.1 -= pos.1;
-                    }
+                // TODO: move considering out
+                let mut dest = (cur_parabox.id, new_pos); 
+                for (block, box_id, pos) in path_blocks.iter().rev() {
+                    self.paraboxes[*box_id as usize].remove_square(*pos);
+                    self.paraboxes[*box_id as usize].add_square(dest.1, block.clone());
+                    dest = (*box_id, *pos);
                 }
-                else if new_pos.1 == self.player_pos.1 .1 as i32 {
-                    let mut final_pos = (new_pos.0 - pos.0, new_pos.1);
-                    while final_pos.0 != self.player_pos.1 .0 as i32 {
-                        let block_origin = parabox.find_at(final_pos.0 as u32, final_pos.1 as u32).unwrap();
-                        parabox.add_square((final_pos.0 + pos.0) as u32, final_pos.1 as u32, block_origin.clone());
-                        parabox.remove_square(final_pos.0 as u32, final_pos.1 as u32);
-                        final_pos.0 -= pos.0;
-                    }
+                if let Some(square) = square {
+                    self.paraboxes[dest.0 as usize].add_square(dest.1, square);
                 } else {
-                    unreachable!("Invalid move: {:?}", new_pos);
+                    // If no square is provided, just move the player
+                    self.player_pos = dest;
+                    self.paraboxes[ori_id as usize].set_player_pos(None);
+                    self.paraboxes[dest.0 as usize].set_player_pos(Some(dest.1));
                 }
-                parabox.set_player_pos(
-                    (self.player_pos.1 .0 as i32 + pos.0) as u32,
-                    (self.player_pos.1 .1 as i32 + pos.1)as u32
-                );
-                self.player_pos.1 = (
-                    (self.player_pos.1 .0 as i32 + pos.0) as u32,
-                    (self.player_pos.1 .1 as i32 + pos.1) as u32,
-                );
+
+                // if new_pos.0 == self.player_pos.1 .0 as i32 {
+                //     let mut final_pos = (new_pos.0, new_pos.1 - dir.1);
+                //     while final_pos.1 != self.player_pos.1 .1 as i32 {
+                //         let block_origin = parabox.find_at(final_pos.0 as i32, final_pos.1 as i32).unwrap();
+                //         parabox.add_square(final_pos.0 as i32, (final_pos.1 + dir.1) as i32, block_origin.clone());
+                //         parabox.remove_square(final_pos.0 as i32, final_pos.1 as i32);
+                //         final_pos.1 -= dir.1;
+                //     }
+                // }
+                // else if new_pos.1 == self.player_pos.1 .1 as i32 {
+                //     let mut final_pos = (new_pos.0 - dir.0, new_pos.1);
+                //     while final_pos.0 != self.player_pos.1 .0 as i32 {
+                //         let block_origin = parabox.find_at(final_pos.0 as i32, final_pos.1 as i32).unwrap();
+                //         parabox.add_square((final_pos.0 + dir.0) as i32, final_pos.1 as i32, block_origin.clone());
+                //         parabox.remove_square(final_pos.0 as i32, final_pos.1 as i32);
+                //         final_pos.0 -= dir.0;
+                //     }
+                // } else {
+                //     unreachable!("Invalid move: {:?}", new_pos);
+                // }
+                // parabox.set_player_pos(
+                //     (self.player_pos.1 .0 as i32 + dir.0) as i32,
+                //     (self.player_pos.1 .1 as i32 + dir.1)as i32
+                // );
+                // self.player_pos.1 = (
+                //     (self.player_pos.1 .0 as i32 + dir.0) as i32,
+                //     (self.player_pos.1 .1 as i32 + dir.1) as i32,
+                // );
             }
         } else {
             panic!("Parabox with id {} not found", self.player_pos.0);
         }
+
         self.check_win()
     }
 
@@ -158,17 +212,17 @@ impl Debug for LevelConfig {
 
 #[derive(Resource, Clone)]
 pub struct Parabox {
-    id: u32,
+    id: i32,
     outer: Option<Box<Parabox>>,
-    map: HashMap<(u32, u32), Square>,
-    player_pos: Option<(u32, u32)>, // (x, y)
-    player_target: Option<(u32, u32)>, // (x, y)
-    size: (u32, u32), // (width, height)
-    targets: Vec<(u32, u32)>, // List of target positions
+    map: HashMap<(i32, i32), Square>,
+    player_pos: Option<(i32, i32)>, // (x, y)
+    player_target: Option<(i32, i32)>, // (x, y)
+    size: (i32, i32), // (width, height)
+    targets: Vec<(i32, i32)>, // List of target positions
 }
 
 impl Parabox {
-    fn new(id: u32, size: (u32, u32)) -> Self {
+    fn new(id: i32, size: (i32, i32)) -> Self {
         Parabox {
             id,
             outer: None,
@@ -180,28 +234,43 @@ impl Parabox {
         }
     }
 
-    fn add_square(&mut self, x: u32, y: u32, square: Square) {
-        self.map.insert((x, y), square);
+    fn add_square(&mut self, pos: (i32, i32), square: Square) {
+        self.map.insert(pos, square);
     }
 
-    fn remove_square(&mut self, x: u32, y: u32) {
-        self.map.remove(&(x, y));
+    fn remove_square(&mut self, pos: (i32, i32)) {
+        self.map.remove(&pos);
     }
 
-    fn set_player_pos(&mut self, x: u32, y: u32) {
-        self.player_pos = Some((x, y));
+    fn set_player_pos(&mut self, pos: Option<(i32, i32)>) {
+        self.player_pos = pos;
     }
 
-    fn set_player_target(&mut self, x: u32, y: u32) {
+    fn set_player_target(&mut self, x: i32, y: i32) {
         self.player_target = Some((x, y));
     }
 
-    fn add_target(&mut self, x: u32, y: u32) {
+    fn add_target(&mut self, x: i32, y: i32) {
         self.targets.push((x, y));
     }
 
-    fn find_at(&self, x: u32, y: u32) -> Option<&Square> {
+    fn find_at(&self, x: i32, y: i32) -> Option<&Square> {
         self.map.get(&(x, y))
+    }
+
+    fn find_box(&self, id: i32) -> (i32, i32) {
+        for ((x, y), square) in &self.map {
+            if let Square::Parabox(box_id) = square {
+                if *box_id == id {
+                    return (*x, *y);
+                }
+            }
+        }
+        panic!("Parabox with id {} not found in Parabox {}", id, self.id);
+    }
+
+    fn check_inbounds(&self, (x, y): (i32, i32)) -> bool {
+        x >= 0 && y >= 0 && x < self.size.0 && y < self.size.1
     }
 
     fn check_win(&self) -> bool {
@@ -277,10 +346,10 @@ impl Debug for Parabox {
 }
 
 #[derive(Resource, Clone)]
-enum Square {
+pub enum Square {
     Wall,
     Block,
-    Parabox(u32),
+    Parabox(i32),
 }
 
 impl Debug for Square {

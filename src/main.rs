@@ -7,7 +7,7 @@ use plugins::{menu, game, win};
 const TEXT_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
 
 #[derive(Resource, Debug, Component, PartialEq, Eq, Clone, Copy)]
-struct Level(u32);
+struct Level(i32);
 
 fn main() {
     // use configs::*;

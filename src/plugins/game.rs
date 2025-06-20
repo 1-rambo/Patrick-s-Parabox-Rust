@@ -41,7 +41,7 @@ fn game_setup(
 fn render_game(
     mut commands: Commands,
     level_config: ResMut<LevelConfig>,
-    asset_server: Res<AssetServer>,
+    _asset_server: Res<AssetServer>,
 ) {
     //println!("Setting up game screen");
     commands
@@ -60,7 +60,7 @@ fn render_game(
         .with_children(|parent| {
             let parabox_num = level_config.paraboxes.len();
             let colors = vec![
-                css::RED, css::GREEN, css::BLUE, css::YELLOW, css::ORANGE, css::PURPLE,
+                css::DARK_RED, css::GREEN, css::DARK_BLUE, css::YELLOW, css::ORANGE, css::PURPLE,
                 css::PINK, css::MAGENTA, css::LIGHT_GRAY
             ];
             for (id, parabox) in level_config.paraboxes.iter().enumerate() {
@@ -127,7 +127,7 @@ fn game_action(
         STAY
     };
     if movement != STAY {
-        let win = level_config.shift(movement);
+        let win = level_config.shift(None, None, movement);
         // If there was a movement, we can despawn the current game screen
         for entity in &query {
             commands.entity(entity).despawn();

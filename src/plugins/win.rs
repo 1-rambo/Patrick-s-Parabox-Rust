@@ -16,7 +16,7 @@ struct OnWinScreen;
 
 fn win_setup(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    _asset_server: Res<AssetServer>,
 ) {
     //println!("Setting up win screen");
     commands
