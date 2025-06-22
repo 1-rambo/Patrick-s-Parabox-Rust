@@ -97,6 +97,7 @@ impl LevelConfig {
 
         // Start from the parabox that contains the player
         let ori_pos = ori_pos.unwrap_or(self.player_pos);
+        println!("Attempting to shift square: {:?} from position: {:?}, in direction: {:?}", square, ori_pos, dir);
         if let Some(parabox) = self.paraboxes.get_mut(ori_pos.0 as usize) {
             // Check for wall/empty along the shift direction
             let ori_id = parabox.id;
@@ -104,7 +105,7 @@ impl LevelConfig {
                 (ori_pos.1 .0 as i32 + dir.0),
                 (ori_pos.1 .1 as i32 + dir.1),
             );
-            // TODO: check for empty (including outer)
+            // check for empty (including outer)
             let mut cur_parabox = if parabox.check_inbounds(new_pos) {
                 parabox.clone()
             } else {
@@ -120,10 +121,12 @@ impl LevelConfig {
                 }
                 outer_parabox
             };
-            // cur_parabox: the new parabox; new_pos: the new position in the parabox
-
+            // cur_parabox: the new parabox;
+            // new_pos: the new position in the parabox
+            println!("new_pos: {:?}", new_pos);
             let mut path_blocks = Vec::new();
             while let v @ Some(Square::Block | Square::Parabox(_)) = cur_parabox.find_at(new_pos.0 as i32, new_pos.1 as i32) {
+                println!("Found block at new_pos: {:?}, square: {:?}", new_pos, v);
                 path_blocks.push((v.unwrap().clone(), cur_parabox.id, new_pos));
                 new_pos = (
                     new_pos.0 + dir.0,
@@ -149,11 +152,49 @@ impl LevelConfig {
             // }
             if let Some(Square::Wall) = cur_parabox.find_at(new_pos.0 as i32, new_pos.1 as i32) {
                 // TODO: try_enter
-                println!("New position is a wall: {:?}", new_pos);
+                println!("New position is a wall: {:?}, trying enter now", new_pos);
+                if path_blocks.is_empty() { return false; }
+                let mut successful = false;
+                for ((block, box_id, pos), (next_block, _, _)) in path_blocks.iter().rev().zip(path_blocks.iter().rev().skip(1)) {
+                    if !successful {
+                        if let Square::Parabox(id) = block {
+                            if self.shift(Some(next_block.clone()), Some((*id, self.paraboxes[*id as usize].enter_from(dir))), dir) { 
+                                successful = true;
+                            }
+                        }
+                    } else {
+                        self.paraboxes[*box_id as usize].remove_square(*pos);
+                        self.paraboxes[*box_id as usize].add_square(*pos, next_block.clone());
+                    }
+                }
+                if !successful {
+                    if let Square::Parabox(id) = path_blocks[0].0 {
+                        if self.shift(square.clone(), Some((id, self.paraboxes[id as usize].enter_from(dir))), dir) {
+                            successful = true;
+                            if let Some(_) = square {
+                                self.paraboxes[ori_pos.0 as usize].remove_square(ori_pos.1);
+                            } else {
+                                self.paraboxes[ori_pos.0 as usize].set_player_pos(None);
+                            }
+                        }
+                    }
+                }
+                else {
+                    let (_, box_id, pos) = path_blocks[0];
+                    self.paraboxes[box_id as usize].remove_square(pos);
+                    if let Some(square) = square {
+                        self.paraboxes[box_id as usize].add_square(pos, square);
+                    } else {
+                        // If no square is provided, just move the player
+                        self.player_pos = (box_id, pos);
+                        self.paraboxes[ori_id as usize].set_player_pos(None);
+                        self.paraboxes[box_id as usize].set_player_pos(Some(pos));
+                    }
+                }
+                return successful;
             }
             else {
-                // println!("New position is valid: {:?}", new_pos);
-                // TODO: move considering out
+                // move backwards through the path_blocks
                 let mut dest = (cur_parabox.id, new_pos); 
                 println!("Final destination: {:?}", dest);
                 for (block, box_id, pos) in path_blocks.iter().rev() {
@@ -171,44 +212,16 @@ impl LevelConfig {
                     self.paraboxes[ori_id as usize].set_player_pos(None);
                     self.paraboxes[dest.0 as usize].set_player_pos(Some(dest.1));
                 }
-
-                // if new_pos.0 == self.player_pos.1 .0 as i32 {
-                //     let mut final_pos = (new_pos.0, new_pos.1 - dir.1);
-                //     while final_pos.1 != self.player_pos.1 .1 as i32 {
-                //         let block_origin = parabox.find_at(final_pos.0 as i32, final_pos.1 as i32).unwrap();
-                //         parabox.add_square(final_pos.0 as i32, (final_pos.1 + dir.1) as i32, block_origin.clone());
-                //         parabox.remove_square(final_pos.0 as i32, final_pos.1 as i32);
-                //         final_pos.1 -= dir.1;
-                //     }
-                // }
-                // else if new_pos.1 == self.player_pos.1 .1 as i32 {
-                //     let mut final_pos = (new_pos.0 - dir.0, new_pos.1);
-                //     while final_pos.0 != self.player_pos.1 .0 as i32 {
-                //         let block_origin = parabox.find_at(final_pos.0 as i32, final_pos.1 as i32).unwrap();
-                //         parabox.add_square((final_pos.0 + dir.0) as i32, final_pos.1 as i32, block_origin.clone());
-                //         parabox.remove_square(final_pos.0 as i32, final_pos.1 as i32);
-                //         final_pos.0 -= dir.0;
-                //     }
-                // } else {
-                //     unreachable!("Invalid move: {:?}", new_pos);
-                // }
-                // parabox.set_player_pos(
-                //     (self.player_pos.1 .0 as i32 + dir.0) as i32,
-                //     (self.player_pos.1 .1 as i32 + dir.1)as i32
-                // );
-                // self.player_pos.1 = (
-                //     (self.player_pos.1 .0 as i32 + dir.0) as i32,
-                //     (self.player_pos.1 .1 as i32 + dir.1) as i32,
-                // );
             }
         } else {
             panic!("Parabox with id {} not found", self.player_pos.0);
         }
 
-        self.check_win()
+        // self.check_win()
+        true
     }
 
-    fn check_win(&self) -> bool {
+    pub fn check_win(&self) -> bool {
         for parabox in &self.paraboxes {
             if !parabox.check_win() {
                 return false;
@@ -308,6 +321,28 @@ impl Parabox {
             }
         }
         return true;
+    }
+
+    fn enter_from(&self, dir: (i32, i32)) -> (i32, i32) {
+        if let (1, 0) = dir {
+            // Enter from the top
+            (-1, self.size.1 / 2)
+        }
+        else if let (-1, 0) = dir {
+            // Enter from the bottom
+            (self.size.0, self.size.1 / 2)
+        }
+        else if let (0, 1) = dir {
+            // Enter from the left
+            (self.size.0 / 2, -1)
+        }
+        else if let (0, -1) = dir {
+            // Enter from the right
+            (self.size.0 / 2, self.size.1)
+        }
+        else {
+            panic!("Invalid direction for entering parabox: {:?}", dir);
+        }
     }
 }
 

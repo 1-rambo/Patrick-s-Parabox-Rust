@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy::color::palettes::*;
+// use bevy::window::WindowClosing;
 
 use crate::plugins::menu;
 use crate::{ Level, GameState, despawn_screen, TEXT_COLOR };
@@ -14,12 +15,16 @@ pub fn game_plugin(app: &mut App) {
             button_system
         ).chain().run_if(in_state(GameState::Game)))
         .add_systems(OnExit(GameState::Game), despawn_screen::<OnGameScreen>)
+        .insert_resource(KeyboardTimer(Timer::from_seconds(0.1, TimerMode::Repeating)))
         .insert_resource(Level(1))
         .insert_resource(LevelConfig::new(1, "assets/levels/1.json"));
 }
 
 #[derive(Component)]
 struct OnGameScreen;
+
+#[derive(Resource)]
+struct KeyboardTimer(Timer);
 
 const UP: (i32, i32) = (-1, 0);
 const DOWN: (i32, i32) = (1, 0);
@@ -98,45 +103,50 @@ fn render_game(
 
 fn game_action(
     mut commands: Commands,
-    keyboard_input: Res<ButtonInput<KeyCode>>,    
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    time: Res<Time>,
+    mut timer: ResMut<KeyboardTimer>,
     query: Query<Entity, With<OnGameScreen>>,
     asset_server: Res<AssetServer>,
     mut game_state: ResMut<NextState<GameState>>,
     mut menu_state: ResMut<NextState<menu::MenuState>>,
     mut level_config: ResMut<LevelConfig>,
 ) {
-    let movement = if keyboard_input.just_pressed(KeyCode::ArrowLeft) || keyboard_input.just_pressed(KeyCode::KeyA) {
-        println!("Move left");
-        LEFT
-    } else if keyboard_input.just_pressed(KeyCode::ArrowRight) || keyboard_input.just_pressed(KeyCode::KeyD) {
-        println!("Move right");
-        RIGHT
-    } else if keyboard_input.just_pressed(KeyCode::ArrowUp) || keyboard_input.just_pressed(KeyCode::KeyW) {
-        println!("Move up");
-        UP
-    } else if keyboard_input.just_pressed(KeyCode::ArrowDown) || keyboard_input.just_pressed(KeyCode::KeyS) {
-        println!("Move down");
-        DOWN 
-    } else if keyboard_input.just_pressed(KeyCode::Escape) {
-        // Exit game
-        game_state.set(GameState::LevelSelect);
-        menu_state.set(menu::MenuState::Levels);
-        STAY
-    } else {
-        // No movement
-        STAY
-    };
-    if movement != STAY {
-        let win = level_config.shift(None, None, movement);
-        // If there was a movement, we can despawn the current game screen
-        for entity in &query {
-            commands.entity(entity).despawn();
-        }
-        // And set up the new game screen
-        render_game(commands, level_config, asset_server);
-        if win {
-            // If the player won, we transition to the win state
-            game_state.set(GameState::Win);
+    if timer.0.tick(time.delta()).just_finished() {
+        let movement = if keyboard_input.pressed(KeyCode::ArrowLeft) || keyboard_input.pressed(KeyCode::KeyA) {
+            println!("Move left");
+            LEFT
+        } else if keyboard_input.pressed(KeyCode::ArrowRight) || keyboard_input.pressed(KeyCode::KeyD) {
+            println!("Move right");
+            RIGHT
+        } else if keyboard_input.pressed(KeyCode::ArrowUp) || keyboard_input.pressed(KeyCode::KeyW) {
+            println!("Move up");
+            UP
+        } else if keyboard_input.pressed(KeyCode::ArrowDown) || keyboard_input.pressed(KeyCode::KeyS) {
+            println!("Move down");
+            DOWN 
+        } else if keyboard_input.pressed(KeyCode::Escape) {
+            // Exit game
+            game_state.set(GameState::LevelSelect);
+            menu_state.set(menu::MenuState::Levels);
+            STAY
+        } else {
+            // No movement
+            STAY
+        };
+        if movement != STAY {
+            let success = level_config.shift(None, None, movement);
+            let win = success && level_config.check_win();
+            // If there was a movement, we can despawn the current game screen
+            for entity in &query {
+                commands.entity(entity).despawn();
+            }
+            // And set up the new game screen
+            render_game(commands, level_config, asset_server);
+            if win {
+                // If the player won, we transition to the win state
+                game_state.set(GameState::Win);
+            }
         }
     }
 }
