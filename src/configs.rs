@@ -165,16 +165,21 @@ impl LevelConfig {
                     } else {
                         self.paraboxes[*box_id as usize].remove_square(*pos);
                         self.paraboxes[*box_id as usize].add_square(*pos, next_block.clone());
+                        if let Square::Parabox(id) = block {
+                            self.paraboxes[*id as usize].set_outer(Some(*box_id as i32));
+                        }
                     }
                 }
                 if !successful {
                     if let Square::Parabox(id) = path_blocks[0].0 {
                         if self.shift(square.clone(), Some((id, self.paraboxes[id as usize].enter_from(dir))), dir) {
                             successful = true;
-                            if let Some(_) = square {
-                                self.paraboxes[ori_pos.0 as usize].remove_square(ori_pos.1);
-                            } else {
-                                self.paraboxes[ori_pos.0 as usize].set_player_pos(None);
+                            if id != ori_id {
+                                if let Some(_) = square {
+                                    self.paraboxes[ori_pos.0 as usize].remove_square(ori_pos.1);
+                                } else {
+                                    self.paraboxes[ori_pos.0 as usize].set_player_pos(None);
+                                }
                             }
                         }
                     }
@@ -183,7 +188,10 @@ impl LevelConfig {
                     let (_, box_id, pos) = path_blocks[0];
                     self.paraboxes[box_id as usize].remove_square(pos);
                     if let Some(square) = square {
-                        self.paraboxes[box_id as usize].add_square(pos, square);
+                        self.paraboxes[box_id as usize].add_square(pos, square.clone());
+                        if let Square::Parabox(id) = square {
+                            self.paraboxes[id as usize].set_outer(Some(box_id as i32));
+                        }
                     } else {
                         // If no square is provided, just move the player
                         self.player_pos = (box_id, pos);
@@ -202,10 +210,16 @@ impl LevelConfig {
                     self.paraboxes[*box_id as usize].remove_square(*pos);
                     println!("adding block: {:?} to parabox: {} at pos: {:?}", block, dest.0, dest.1);
                     self.paraboxes[dest.0 as usize].add_square(dest.1, block.clone());
+                    if let Square::Parabox(id) = block {
+                        self.paraboxes[*id as usize].set_outer(Some(dest.0 as i32));
+                    }
                     dest = (*box_id, *pos);
                 }
                 if let Some(square) = square {
-                    self.paraboxes[dest.0 as usize].add_square(dest.1, square);
+                    self.paraboxes[dest.0 as usize].add_square(dest.1, square.clone());
+                    if let Square::Parabox(id) = square {
+                        self.paraboxes[id as usize].set_outer(Some(dest.0 as i32));
+                    }
                 } else {
                     // If no square is provided, just move the player
                     self.player_pos = dest;
@@ -343,6 +357,10 @@ impl Parabox {
         else {
             panic!("Invalid direction for entering parabox: {:?}", dir);
         }
+    }
+
+    fn set_outer(&mut self, outer_id: Option<i32>) {
+        self.outer = outer_id;
     }
 }
 

@@ -65,8 +65,8 @@ fn render_game(
         .with_children(|parent| {
             let parabox_num = level_config.paraboxes.len();
             let colors = vec![
-                css::DARK_RED, css::GREEN, css::DARK_BLUE, css::YELLOW, css::ORANGE, css::PURPLE,
-                css::PINK, css::MAGENTA, css::LIGHT_GRAY
+                css::DARK_RED, css::GREEN, css::DARK_BLUE, css::MAGENTA, css::ORANGE, css::PURPLE,
+                css::PINK, css::LIGHT_GRAY
             ];
             for (id, parabox) in level_config.paraboxes.iter().enumerate() {
                 parent.spawn((
