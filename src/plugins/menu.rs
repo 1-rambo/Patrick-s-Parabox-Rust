@@ -44,11 +44,7 @@ pub struct SelectedOption;
 #[derive(Component)]
 pub enum MenuButtonAction {
     SelectLevel,
-    // Settings,
-    // SettingsDisplay,
-    // SettingsSound,
     BackToMainMenu,
-    // BackToSettings,
     // GoToHelp,
     Quit,
 }
@@ -73,23 +69,10 @@ fn menu_setup(mut menu_state: ResMut<NextState<MenuState>>) {
     menu_state.set(MenuState::Main);
 }
 
-pub fn main_menu_setup(mut commands: Commands, _asset_server: Res<AssetServer>) {
-    // Common style for all buttons on the screen
-    // let button_style = (
-    //     width: Val::Px(250.0),
-    //     height: Val::Px(65.0),
-    //     margin: UiRect::all(Val::Px(20.0)),
-    //     justify_content: JustifyContent::Center,
-    //     align_items: AlignItems::Center,
-    // );
-    // let button_icon_style = (
-    //     width: Val::Px(30.0),
-    //     // This takes the icons out of the flexbox flow, to be positioned exactly
-    //     position_type: PositionType::Absolute,
-    //     // The icon will be close to the left border of the button
-    //     left: Val::Px(10.0),
-    // );
-
+pub fn main_menu_setup(
+    mut commands: Commands, 
+    _asset_server: Res<AssetServer>
+) {
     commands
         .spawn((
             Node {
@@ -109,7 +92,6 @@ pub fn main_menu_setup(mut commands: Commands, _asset_server: Res<AssetServer>) 
                         flex_direction: FlexDirection::Column,
                         align_items: AlignItems::Center,
                         margin: UiRect::all(Val::Px(50.0)),
-                        // background_color: Color::CRIMSON.into(),
                         ..default()
                     },
                 )
@@ -122,10 +104,6 @@ pub fn main_menu_setup(mut commands: Commands, _asset_server: Res<AssetServer>) 
                             ..default()
                         },
                         TextColor(TEXT_COLOR.into())),
-                        // .with_style(Style {
-                        //     margin: UiRect::all(Val::Px(50.0)),
-                        //     ..default()
-                        // }),
                     );
                     parent
                         .spawn((
@@ -136,7 +114,6 @@ pub fn main_menu_setup(mut commands: Commands, _asset_server: Res<AssetServer>) 
                                 height: Val::Px(65.0),
                                 justify_content: JustifyContent::Center,
                                 align_items: AlignItems::Center,
-                                // background_color: NORMAL_BUTTON.into(),
                                 ..default()
                             },
                             MenuButtonAction::SelectLevel,
@@ -159,10 +136,9 @@ pub fn main_menu_setup(mut commands: Commands, _asset_server: Res<AssetServer>) 
                                 height: Val::Px(65.0),
                                 justify_content: JustifyContent::Center,
                                 align_items: AlignItems::Center,
-                                // background_color: NORMAL_BUTTON.into(),
                                 ..default()
                             },
-                            MenuButtonAction::Quit, // Placeholder for future actions
+                            MenuButtonAction::Quit,
                         ))
                         .with_children(|parent| {
                             parent.spawn((Text::new("Exit"),
@@ -191,7 +167,7 @@ pub fn level_select_menu_setup(
                 justify_content: JustifyContent::Center,                
                 ..default()
             },
-            BackgroundColor(css::DARK_BLUE.into()),
+            BackgroundColor(css::DARK_CYAN.into()),
             OnLevelSelectScreen,
         ))
         .with_children(|parent| {
@@ -357,7 +333,6 @@ pub fn menu_action(
                 MenuButtonAction::SelectLevel => {
                     game_state.set(GameState::LevelSelect);
                     menu_state.set(MenuState::Levels);
-                    //menu_state.set(MenuState::Levels);
                 }
                 // MenuButtonAction::Settings => menu_state.set(MenuState::Settings),
                 // MenuButtonAction::SettingsDisplay => {
