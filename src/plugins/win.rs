@@ -62,6 +62,28 @@ fn win_setup(
                                 align_items: AlignItems::Center,
                                 ..default()
                             },
+                            MenuButtonAction::NextLevel,
+                        ))
+                        .with_children(|parent| {
+                            parent.spawn((Text::new("Next Level"),
+                                TextFont {
+                                    font_size: 40.0,
+                                    ..default()
+                                },  
+                                TextColor(TEXT_COLOR.into()),
+                            ));
+                        });
+                    parent
+                        .spawn((
+                            Button,
+                            Node {
+                                margin: UiRect::all(Val::Px(20.0)),
+                                width: Val::Px(350.0),
+                                height: Val::Px(65.0),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
+                                ..default()
+                            },
                             MenuButtonAction::BackToMainMenu,
                         ))
                         .with_children(|parent| {

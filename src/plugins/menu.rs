@@ -45,6 +45,7 @@ pub struct SelectedOption;
 pub enum MenuButtonAction {
     SelectLevel,
     BackToMainMenu,
+    NextLevel,
     // GoToHelp,
     Quit,
 }
@@ -323,6 +324,7 @@ pub fn menu_action(
     mut app_exit_events: EventWriter<AppExit>,
     mut menu_state: ResMut<NextState<MenuState>>,
     mut game_state: ResMut<NextState<GameState>>,
+    mut level_setting: ResMut<Level>,
 ) {
     for (interaction, menu_button_action) in &interaction_query {
         if *interaction == Interaction::Pressed {
@@ -334,13 +336,14 @@ pub fn menu_action(
                     game_state.set(GameState::LevelSelect);
                     menu_state.set(MenuState::Levels);
                 }
-                // MenuButtonAction::Settings => menu_state.set(MenuState::Settings),
-                // MenuButtonAction::SettingsDisplay => {
-                //     menu_state.set(MenuState::SettingsDisplay);
-                // }
-                // MenuButtonAction::SettingsSound => {
-                //     menu_state.set(MenuState::SettingsSound);
-                // }
+                MenuButtonAction::NextLevel => {
+                    // This action is not used in the current menu, but can be used to go to the next level
+                    let level_number = level_setting.0 % 12;
+                    *level_setting = Level(level_number + 1);
+                    game_state.set(GameState::Game);
+                    menu_state.set(MenuState::Disabled);
+                    
+                }
                 MenuButtonAction::BackToMainMenu => {
                     game_state.set(GameState::Menu);
                     menu_state.set(MenuState::Main);

@@ -114,16 +114,16 @@ fn game_action(
 ) {
     if timer.0.tick(time.delta()).just_finished() {
         let movement = if keyboard_input.pressed(KeyCode::ArrowLeft) || keyboard_input.pressed(KeyCode::KeyA) {
-            println!("Move left");
+            //println!("Move left");
             LEFT
         } else if keyboard_input.pressed(KeyCode::ArrowRight) || keyboard_input.pressed(KeyCode::KeyD) {
-            println!("Move right");
+            //println!("Move right");
             RIGHT
         } else if keyboard_input.pressed(KeyCode::ArrowUp) || keyboard_input.pressed(KeyCode::KeyW) {
-            println!("Move up");
+            //println!("Move up");
             UP
         } else if keyboard_input.pressed(KeyCode::ArrowDown) || keyboard_input.pressed(KeyCode::KeyS) {
-            println!("Move down");
+            //println!("Move down");
             DOWN 
         } else if keyboard_input.pressed(KeyCode::Escape) {
             // Exit game
