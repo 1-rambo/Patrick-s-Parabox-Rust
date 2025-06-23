@@ -35,17 +35,16 @@
 
 ```Rust
 pub fn menu_plugin(app: &mut App) {
-    app
-        .init_state::<MenuState>()
-        .add_systems(OnEnter(GameState::Menu), menu_setup)
-        .add_systems(OnEnter(MenuState::Main), main_menu_setup)
-        .add_systems(OnExit(MenuState::Main), despawn_screen::<OnMainMenuScreen>) 
-        .add_systems(Update, (start_button.run_if(in_state(MenuState::Main)),))
-        .add_systems(OnEnter(MenuState::Levels), level_select_menu_setup)
-        .add_systems(OnExit(MenuState::Levels), despawn_screen::<OnLevelSelectScreen>)
-        .add_systems(Update, level_button.run_if(in_state(MenuState::Levels)))
-        .add_systems(Update, (menu_action, button_system).run_if(in_state(GameState::Menu)))
-        .add_systems(Update, (menu_action, button_system).run_if(in_state(GameState::LevelSelect)));
+    app.init_state::<MenuState>()
+    .add_systems(OnEnter(GameState::Menu), menu_setup)
+    .add_systems(OnEnter(MenuState::Main), main_menu_setup)
+    .add_systems(OnExit(MenuState::Main), despawn_screen::<OnMainMenuScreen>) 
+    .add_systems(Update, (start_button.run_if(in_state(MenuState::Main)),))
+    .add_systems(OnEnter(MenuState::Levels), level_select_menu_setup)
+    .add_systems(OnExit(MenuState::Levels), despawn_screen::<OnLevelSelectScreen>)
+    .add_systems(Update, level_button.run_if(in_state(MenuState::Levels)))
+    .add_systems(Update, (menu_action, button_system).run_if(in_state(GameState::Menu)))
+    .add_systems(Update, (menu_action, button_system).run_if(in_state(GameState::LevelSelect)));
 }
 ```
 
